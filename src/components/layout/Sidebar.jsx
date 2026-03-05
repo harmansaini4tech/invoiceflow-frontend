@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import {
   LayoutDashboard, FileText, Users, Quote, Receipt,
-  Settings, CreditCard, Shield, LogOut, Zap
+  Settings, CreditCard, Shield, LogOut, Zap, Menu, X
 } from 'lucide-react';
 
 const navItems = [
@@ -18,36 +18,55 @@ const navItems = [
 export default function Sidebar() {
   const { user, company, logout } = useAuth();
   const [subscription, setSubscription] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Always fetch fresh subscription data
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  // Fetch fresh subscription data
   useEffect(() => {
     api.get('/subscriptions')
       .then(r => setSubscription(r.data.data))
       .catch(() => {});
   }, []);
 
-  const handleLogout = () => { logout(); navigate('/login'); };
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const isPaid = subscription?.plan && subscription.plan !== 'free';
   const invoiceUsed = subscription?.invoiceCount || 0;
   const invoiceLimit = subscription?.limits?.invoices || 5;
 
-  return (
-    <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-100 flex flex-col z-40">
+  // ─── Sidebar Content (shared between desktop + mobile) ───────────────────
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
-        <div className="w-9 h-9 bg-red-600 rounded-xl flex items-center justify-center">
-          <Zap className="w-5 h-5 text-white" />
+      <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-red-600 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Zap className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="font-bold text-gray-900 text-sm">InvoiceFlow</p>
+            <p className="text-xs text-gray-400 truncate max-w-[130px]">{company?.name}</p>
+          </div>
         </div>
-        <div>
-          <p className="font-bold text-gray-900 text-sm">InvoiceFlow</p>
-          <p className="text-xs text-gray-400 truncate max-w-[130px]">{company?.name}</p>
-        </div>
+        {/* Close button — mobile only */}
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="md:hidden p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+          <X className="w-5 h-5 text-gray-500" />
+        </button>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink key={to} to={to}
             className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
@@ -57,7 +76,9 @@ export default function Sidebar() {
         ))}
 
         <div className="pt-4 pb-2 px-3">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Account</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            Account
+          </p>
         </div>
 
         <NavLink to="/settings"
@@ -76,7 +97,7 @@ export default function Sidebar() {
         )}
       </nav>
 
-      {/* Plan Badge */}
+      {/* Plan Badge + User */}
       <div className="px-4 py-3 border-t border-gray-100">
         <div className={`rounded-lg p-3 mb-3 ${isPaid ? 'bg-red-50' : 'bg-gray-50'}`}>
           <div className="flex items-center justify-between mb-1">
@@ -95,8 +116,6 @@ export default function Sidebar() {
               </span>
             )}
           </div>
-
-          {/* Only show usage bar on free plan */}
           {!isPaid && (
             <div className="mt-1">
               <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -109,18 +128,14 @@ export default function Sidebar() {
               </div>
             </div>
           )}
-
-          {/* Show plan perks on paid plan */}
           {isPaid && (
-            <p className="text-xs text-gray-500 mt-1">
-              ✓ Unlimited invoices & customers
-            </p>
+            <p className="text-xs text-gray-500 mt-1">✓ Unlimited invoices & customers</p>
           )}
         </div>
 
         {/* User */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
             <span className="text-red-600 font-bold text-sm">
               {user?.name?.[0]?.toUpperCase()}
             </span>
@@ -130,11 +145,45 @@ export default function Sidebar() {
             <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
           </div>
           <button onClick={handleLogout}
-            className="text-gray-400 hover:text-red-600 transition-colors" title="Logout">
+            className="text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
+            title="Logout">
             <LogOut className="w-4 h-4" />
           </button>
         </div>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* ── Desktop Sidebar (md and above) ───────────────────────────────── */}
+      <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-100 flex-col z-40">
+        <SidebarContent />
+      </aside>
+
+      {/* ── Mobile Hamburger Button ───────────────────────────────────────── */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-xl shadow-md border border-gray-100 hover:bg-gray-50 transition-colors">
+        <Menu className="w-5 h-5 text-gray-700" />
+      </button>
+
+      {/* ── Mobile Overlay ────────────────────────────────────────────────── */}
+      {mobileOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* ── Mobile Drawer ─────────────────────────────────────────────────── */}
+      <aside className={`
+        md:hidden fixed inset-y-0 left-0 w-72 bg-white z-50 flex flex-col
+        transform transition-transform duration-300 ease-in-out shadow-2xl
+        ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <SidebarContent />
+      </aside>
+    </>
   );
 }

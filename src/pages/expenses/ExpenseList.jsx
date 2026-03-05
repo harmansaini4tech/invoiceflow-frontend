@@ -1,24 +1,21 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import api from '../../api/axios';
-import Table from '../../components/ui/Table';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
+import Spinner from '../../components/ui/Spinner';
+import EmptyState from '../../components/ui/EmptyState';
 import toast from 'react-hot-toast';
-import { Plus, RefreshCw, TrendingDown, Lock, Zap } from 'lucide-react';
+import { Plus, RefreshCw, TrendingDown, Lock, Zap, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
 const CATEGORIES = ['travel','food','utilities','software','hardware','marketing','salary','other'];
 
 const EMPTY_FORM = {
-  category: 'software',
-  description: '',
-  amount: '',
-  currency: 'USD',
-  date: new Date().toISOString().split('T')[0],
-  vendor: '',
-  notes: '',
+  category: 'software', description: '', amount: '',
+  currency: 'USD', date: new Date().toISOString().split('T')[0],
+  vendor: '', notes: '',
 };
 
 const CATEGORY_COLORS = {
@@ -32,43 +29,42 @@ const CATEGORY_COLORS = {
   other:     'bg-gray-100 text-gray-600',
 };
 
-// ─── Upgrade Wall Component ───────────────────────────────────────────────────
+// ─── Upgrade Wall ─────────────────────────────────────────────────────────────
 function UpgradeWall({ currentPlan }) {
   const navigate = useNavigate();
-
   const PLAN_FEATURES = {
-    pro: ['Unlimited invoices', 'Expense tracking', 'Custom branding', 'Recurring invoices', '5 team members', 'Priority support'],
+    pro:      ['Unlimited invoices', 'Expense tracking', 'Custom branding', 'Recurring invoices', '5 team members', 'Priority support'],
     business: ['Everything in Pro', 'Unlimited team members', 'API access', 'White-label', 'Dedicated support'],
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Expenses</h1>
-        <p className="text-sm text-gray-500">Track your business spending</p>
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900">Expenses</h1>
+        <p className="text-xs md:text-sm text-gray-500">Track your business spending</p>
       </div>
 
       {/* Lock Banner */}
-      <div className="rounded-2xl bg-gradient-to-br from-red-600 to-red-700 p-8 text-white text-center">
-        <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Lock className="w-8 h-8 text-white" />
+      <div className="rounded-2xl bg-gradient-to-br from-red-600 to-red-700 p-6 md:p-8 text-white text-center">
+        <div className="w-14 h-14 md:w-16 md:h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <Lock className="w-7 h-7 md:w-8 md:h-8 text-white" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Upgrade to Access Expenses</h2>
-        <p className="text-red-100 mb-1">
+        <h2 className="text-xl md:text-2xl font-bold mb-2">Upgrade to Access Expenses</h2>
+        <p className="text-red-100 mb-1 text-sm md:text-base">
           You're on the <span className="font-bold uppercase text-white">{currentPlan}</span> plan.
         </p>
-        <p className="text-red-100 text-sm mb-6">
+        <p className="text-red-100 text-xs md:text-sm mb-6">
           Expense tracking is available on Pro and Business plans.
         </p>
         <button
           onClick={() => navigate('/billing')}
-          className="inline-flex items-center gap-2 bg-white text-red-600 font-bold py-3 px-8 rounded-xl hover:bg-red-50 transition-colors shadow-lg">
-          <Zap className="w-5 h-5" />
+          className="inline-flex items-center gap-2 bg-white text-red-600 font-bold py-2.5 md:py-3 px-6 md:px-8 rounded-xl hover:bg-red-50 transition-colors shadow-lg text-sm md:text-base">
+          <Zap className="w-4 h-4 md:w-5 md:h-5" />
           Upgrade Now
         </button>
       </div>
 
-      {/* Plan Cards */}
+      {/* Plan Cards — stacked on mobile, side by side on md+ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {Object.entries(PLAN_FEATURES).map(([plan, features]) => (
           <div key={plan}
@@ -109,14 +105,14 @@ function UpgradeWall({ currentPlan }) {
   );
 }
 
-// ─── Main Expense List ────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ExpenseList() {
-  const [expenses, setExpenses] = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [modal, setModal]       = useState(false);
-  const [form, setForm]         = useState(EMPTY_FORM);
-  const [saving, setSaving]     = useState(false);
-  const [planState, setPlanState] = useState({ blocked: false, currentPlan: 'free' });
+  const [expenses, setExpenses]     = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [modal, setModal]           = useState(false);
+  const [form, setForm]             = useState(EMPTY_FORM);
+  const [saving, setSaving]         = useState(false);
+  const [planState, setPlanState]   = useState({ blocked: false, currentPlan: 'free' });
 
   const fetchExpenses = useCallback(async () => {
     setLoading(true);
@@ -126,40 +122,36 @@ export default function ExpenseList() {
       setPlanState({ blocked: false, currentPlan: 'business' });
     } catch (err) {
       if (err.response?.status === 403 && err.response?.data?.code === 'PLAN_UPGRADE_REQUIRED') {
-        setPlanState({
-          blocked: true,
-          currentPlan: err.response.data.currentPlan || 'free',
-        });
+        setPlanState({ blocked: true, currentPlan: err.response.data.currentPlan || 'free' });
       } else {
         toast.error('Failed to load expenses');
       }
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
 
-  const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+  if (!loading && planState.blocked) {
+    return <UpgradeWall currentPlan={planState.currentPlan} />;
+  }
+
+  const totalExpenses  = expenses.reduce((s, e) => s + (e.amount || 0), 0);
   const thisMonthTotal = expenses
     .filter(e => new Date(e.date).getMonth() === new Date().getMonth())
     .reduce((s, e) => s + e.amount, 0);
-
   const byCategory = CATEGORIES.reduce((acc, cat) => {
     acc[cat] = expenses.filter(e => e.category === cat).reduce((s, e) => s + e.amount, 0);
     return acc;
   }, {});
 
   const handleSave = async () => {
-    if (!form.description) return toast.error('Description is required');
+    if (!form.description)          return toast.error('Description is required');
     if (!form.amount || +form.amount <= 0) return toast.error('Enter a valid amount');
     setSaving(true);
     try {
       await api.post('/expenses', { ...form, amount: +form.amount });
       toast.success('Expense recorded!');
-      setModal(false);
-      setForm(EMPTY_FORM);
-      fetchExpenses();
+      setModal(false); setForm(EMPTY_FORM); fetchExpenses();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save');
     } finally { setSaving(false); }
@@ -170,76 +162,61 @@ export default function ExpenseList() {
     if (!window.confirm('Delete this expense?')) return;
     try {
       await api.delete(`/expenses/${id}`);
-      toast.success('Deleted');
-      fetchExpenses();
+      toast.success('Deleted'); fetchExpenses();
     } catch { toast.error('Delete failed'); }
   };
 
-  // Show upgrade wall for non-pro users
-  if (!loading && planState.blocked) {
-    return <UpgradeWall currentPlan={planState.currentPlan} />;
-  }
-
-  const columns = [
-    { key: 'date', label: 'Date',
-      render: v => v ? format(new Date(v), 'MMM d, yyyy') : '—' },
-    { key: 'category', label: 'Category',
-      render: v => (
-        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${CATEGORY_COLORS[v] || 'bg-gray-100 text-gray-600'}`}>
-          {v}
-        </span>
-      )},
-    { key: 'description', label: 'Description',
-      render: v => <span className="font-medium text-gray-900">{v}</span> },
-    { key: 'vendor', label: 'Vendor', render: v => v || '—' },
-    { key: 'amount', label: 'Amount',
-      render: (v, row) => (
-        <span className="font-semibold text-red-600">
-          -{row.currency} {(v || 0).toFixed(2)}
-        </span>
-      )},
-    { key: '_id', label: '',
-      render: id => (
-        <button onClick={e => handleDelete(id, e)}
-          className="p-1.5 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-600 transition-colors">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        </button>
-      )},
-  ];
+  const closeModal = () => { setModal(false); setForm(EMPTY_FORM); };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-4 md:space-y-6">
+
+      {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Expenses</h1>
-          <p className="text-sm text-gray-500">{expenses.length} records</p>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Expenses</h1>
+          <p className="text-xs md:text-sm text-gray-500">{expenses.length} records</p>
         </div>
-        <Button onClick={() => setModal(true)}>
-          <Plus className="w-4 h-4" /> Add Expense
-        </Button>
+        <div className="flex items-center gap-2">
+          <button onClick={fetchExpenses}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200">
+            <RefreshCw className="w-4 h-4 text-gray-500" />
+          </button>
+          <Button onClick={() => setModal(true)} className="text-sm">
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Add Expense</span>
+            <span className="sm:hidden">Add</span>
+          </Button>
+        </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="card">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
-              <TrendingDown className="w-5 h-5 text-red-500" />
+      {/* ── Summary Cards ──────────────────────────────────────────────── */}
+      {/* Mobile: 2-col grid for first two + full width for categories */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+        {/* Total Expenses */}
+        <div className="card p-3 md:p-6">
+          <div className="flex items-center gap-2 mb-2 md:mb-3">
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
+              <TrendingDown className="w-4 h-4 md:w-5 md:h-5 text-red-500" />
             </div>
-            <p className="text-sm text-gray-500">Total Expenses</p>
+            <p className="text-xs md:text-sm text-gray-500">Total</p>
           </div>
-          <p className="text-2xl font-bold text-red-600">-${totalExpenses.toFixed(2)}</p>
+          <p className="text-lg md:text-2xl font-bold text-red-600 truncate">
+            -${totalExpenses.toFixed(2)}
+          </p>
         </div>
-        <div className="card">
-          <p className="text-sm text-gray-500 mb-1">This Month</p>
-          <p className="text-2xl font-bold text-gray-900">${thisMonthTotal.toFixed(2)}</p>
+
+        {/* This Month */}
+        <div className="card p-3 md:p-6">
+          <p className="text-xs md:text-sm text-gray-500 mb-1 md:mb-2">This Month</p>
+          <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">
+            ${thisMonthTotal.toFixed(2)}
+          </p>
         </div>
-        <div className="card">
-          <p className="text-sm text-gray-500 mb-2">Top Categories</p>
+
+        {/* Top Categories — full width on mobile */}
+        <div className="card p-3 md:p-6 col-span-2 md:col-span-1">
+          <p className="text-xs md:text-sm text-gray-500 mb-2">Top Categories</p>
           <div className="space-y-1.5">
             {Object.entries(byCategory)
               .filter(([, v]) => v > 0)
@@ -260,26 +237,117 @@ export default function ExpenseList() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="card">
-        <div className="flex justify-end mb-4">
-          <button onClick={fetchExpenses} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <RefreshCw className="w-4 h-4 text-gray-500" />
-          </button>
-        </div>
-        <Table
-          columns={columns}
-          data={expenses}
-          loading={loading}
-          emptyMessage="No expenses recorded yet. Add your first expense!"
-        />
+      {/* ── Desktop Table (md and above) ─────────────────────────────── */}
+      <div className="hidden md:block card">
+        {loading ? (
+          <div className="flex justify-center py-16"><Spinner /></div>
+        ) : expenses.length === 0 ? (
+          <EmptyState
+            message="No expenses recorded yet. Add your first expense!"
+            action={<Button onClick={() => setModal(true)}><Plus className="w-4 h-4" /> Add Expense</Button>}
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  {['Date', 'Category', 'Description', 'Vendor', 'Amount', ''].map(h => (
+                    <th key={h}
+                      className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {expenses.map(row => (
+                  <tr key={row._id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3.5 text-sm text-gray-600">
+                      {row.date ? format(new Date(row.date), 'MMM d, yyyy') : '—'}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${CATEGORY_COLORS[row.category] || 'bg-gray-100 text-gray-600'}`}>
+                        {row.category}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 text-sm font-medium text-gray-900">
+                      {row.description}
+                    </td>
+                    <td className="px-4 py-3.5 text-sm text-gray-600">{row.vendor || '—'}</td>
+                    <td className="px-4 py-3.5 text-sm font-semibold text-red-600">
+                      -{row.currency} {(row.amount || 0).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <button onClick={e => handleDelete(row._id, e)}
+                        className="p-1.5 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-600 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Add Modal */}
-      <Modal open={modal} onClose={() => { setModal(false); setForm(EMPTY_FORM); }}
-        title="Add Expense" size="md">
+      {/* ── Mobile Card List (below md) ───────────────────────────────── */}
+      <div className="md:hidden">
+        {loading ? (
+          <div className="flex justify-center py-16"><Spinner /></div>
+        ) : expenses.length === 0 ? (
+          <EmptyState
+            message="No expenses recorded yet."
+            action={<Button onClick={() => setModal(true)}><Plus className="w-4 h-4" /> Add Expense</Button>}
+          />
+        ) : (
+          <div className="space-y-3">
+            {expenses.map(row => (
+              <div key={row._id}
+                className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+
+                {/* Top: category badge + amount */}
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${CATEGORY_COLORS[row.category] || 'bg-gray-100 text-gray-600'}`}>
+                    {row.category}
+                  </span>
+                  <span className="font-bold text-red-600 text-sm">
+                    -{row.currency} {(row.amount || 0).toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Description */}
+                <p className="font-semibold text-gray-900 text-sm mb-1 truncate">
+                  {row.description}
+                </p>
+
+                {/* Vendor + date + delete */}
+                <div className="flex items-center justify-between mt-2">
+                  <div className="space-y-0.5">
+                    {row.vendor && (
+                      <p className="text-xs text-gray-500">{row.vendor}</p>
+                    )}
+                    <p className="text-xs text-gray-400">
+                      {row.date ? format(new Date(row.date), 'MMM d, yyyy') : '—'}
+                    </p>
+                  </div>
+                  <button onClick={e => handleDelete(row._id, e)}
+                    className="p-1.5 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-600 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Add Expense Modal ──────────────────────────────────────────── */}
+      <Modal open={modal} onClose={closeModal} title="Add Expense" size="md">
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+
+          {/* Category + Date — stacked on mobile, side by side on sm+ */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
               <select value={form.category}
@@ -298,7 +366,8 @@ export default function ExpenseList() {
             onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
             placeholder="e.g. Adobe Creative Cloud subscription" />
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* Amount + Currency — side by side always */}
+          <div className="grid grid-cols-2 gap-3 md:gap-4">
             <Input label="Amount *" type="number" min="0" step="0.01"
               value={form.amount} prefix="$"
               onChange={e => setForm(p => ({ ...p, amount: e.target.value }))}
@@ -323,14 +392,17 @@ export default function ExpenseList() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
             <textarea rows={2} value={form.notes}
               onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
-              className="input-field resize-none" placeholder="Optional notes..." />
+              className="input-field resize-none w-full" placeholder="Optional notes..." />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-            <Button variant="secondary" onClick={() => { setModal(false); setForm(EMPTY_FORM); }}>
+          {/* Buttons — full width on mobile */}
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-2 border-t border-gray-100">
+            <Button variant="secondary" onClick={closeModal}
+              className="w-full sm:w-auto justify-center">
               Cancel
             </Button>
-            <Button onClick={handleSave} loading={saving}>
+            <Button onClick={handleSave} loading={saving}
+              className="w-full sm:w-auto justify-center">
               Save Expense
             </Button>
           </div>
