@@ -14,11 +14,12 @@ const initialState = {
 
 function authReducer(state, action) {
   switch (action.type) {
-    case 'SET_LOADING':   return { ...state, loading: action.payload };
-    case 'LOGIN_SUCCESS': return { ...state, ...action.payload, loading: false, error: null };
-    case 'LOGOUT':        return { ...initialState, token: null, loading: false };
-    case 'SET_ERROR':     return { ...state, error: action.payload, loading: false };
-    case 'UPDATE_USER':   return { ...state, user: action.payload };
+    case 'SET_LOADING':    return { ...state, loading: action.payload };
+    case 'LOGIN_SUCCESS':  return { ...state, ...action.payload, loading: false, error: null };
+    case 'LOGOUT':         return { ...initialState, token: null, loading: false };
+    case 'SET_ERROR':      return { ...state, error: action.payload, loading: false };
+    case 'UPDATE_USER':    return { ...state, user: action.payload };
+    case 'UPDATE_COMPANY': return { ...state, company: action.payload }; // ✅ NEW
     default: return state;
   }
 }
@@ -29,13 +30,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const loadUser = async () => {
       const token = localStorage.getItem('token');
-
-      // No token — not logged in, stop loading
       if (!token) {
         dispatch({ type: 'SET_LOADING', payload: false });
         return;
       }
-
       try {
         const { data } = await api.get('/auth/me');
         dispatch({
@@ -48,12 +46,10 @@ export const AuthProvider = ({ children }) => {
           },
         });
       } catch (err) {
-        // Token invalid or expired — clear it silently, don't show toast here
         localStorage.removeItem('token');
         dispatch({ type: 'LOGOUT' });
       }
     };
-
     loadUser();
   }, []);
 
@@ -94,8 +90,13 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: 'LOGOUT' });
   };
 
+  // ✅ NEW — update company in global state
+  const setCompany = (company) => {
+    dispatch({ type: 'UPDATE_COMPANY', payload: company });
+  };
+
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, dispatch }}>
+    <AuthContext.Provider value={{ ...state, login, register, logout, dispatch, setCompany }}>
       {children}
     </AuthContext.Provider>
   );

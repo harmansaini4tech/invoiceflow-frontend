@@ -16,6 +16,9 @@ import QuoteList      from '../pages/quotes/QuoteList';
 import ExpenseList    from '../pages/expenses/ExpenseList';
 import Settings       from '../pages/settings/Settings';
 import Pricing        from '../pages/subscription/Pricing';
+import PublicInvoice from '../pages/public/PublicInvoice';
+import CustomerDetail from '../pages/customers/CustomerDetail';
+import Reports from '../pages/reports/Reports';
 
 const PrivateRoute = ({ children }) => {
   const { token, loading } = useAuth();
@@ -35,6 +38,7 @@ export default function AppRoutes() {
       <Route path="/login"          element={<Login />} />
       <Route path="/register"       element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/invoice/view/:token" element={<PublicInvoice />} />
 
       {/* Protected */}
       <Route path="/dashboard"       element={<PrivateRoute><Dashboard /></PrivateRoute>} />
@@ -46,6 +50,8 @@ export default function AppRoutes() {
       <Route path="/expenses"        element={<PrivateRoute><ExpenseList /></PrivateRoute>} />
       <Route path="/settings"        element={<PrivateRoute><Settings /></PrivateRoute>} />
       <Route path="/billing"         element={<PrivateRoute><Pricing /></PrivateRoute>} />
+      <Route path="/customers/:id" element={<PrivateRoute><CustomerDetail /></PrivateRoute>} />
+      <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
 
       {/* Fallback */}
       <Route path="/"   element={<Navigate to="/dashboard" replace />} />

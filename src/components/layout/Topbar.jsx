@@ -1,6 +1,7 @@
 import React from 'react';
-import { Bell, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { NotificationBell } from './NotificationBell';
 
 export default function Topbar() {
   const { company } = useAuth();
@@ -8,7 +9,7 @@ export default function Topbar() {
   return (
     <header className="h-16 bg-white border-b border-gray-100 flex items-center flex-shrink-0 px-4 md:px-6 gap-3">
 
-      {/* Spacer for mobile hamburger — exact same size as hamburger button */}
+      {/* Spacer for mobile hamburger */}
       <div className="w-9 h-9 flex-shrink-0 md:hidden" />
 
       {/* Search */}
@@ -22,10 +23,10 @@ export default function Topbar() {
 
       {/* Right */}
       <div className="flex items-center gap-2 ml-auto">
-        <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
-          <Bell className="w-5 h-5 text-gray-500" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-        </button>
+
+        {/* ✅ Replace old bell button with this */}
+        <NotificationBell />
+
         {company?.logo?.url && (
           <img src={company.logo.url} alt={company.name}
             className="hidden sm:block h-8 w-auto rounded" />
