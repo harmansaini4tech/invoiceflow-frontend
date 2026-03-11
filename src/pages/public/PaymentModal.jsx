@@ -13,7 +13,7 @@ const BASE_URL =
   process.env.REACT_APP_API_URL || "http://localhost:5000/api/v1";
 
 // ── Inner form ────────────────────────────────────────────────────────────────
-function CheckoutForm({ amount, currency, invoiceNumber, onSuccess }) {
+function CheckoutForm({ amount, currency, invoiceNumber, invoice, onSuccess }) {
   const stripe = useStripe();
   const elements = useElements();
   const [paying, setPaying] = useState(false);
@@ -25,7 +25,7 @@ function CheckoutForm({ amount, currency, invoiceNumber, onSuccess }) {
     setPaying(true);
     setError(null);
 
-    const { error: stripeError } = await stripe.confirmPayment({
+    const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: { return_url: window.location.href },
       redirect: "if_required",
@@ -34,8 +34,17 @@ function CheckoutForm({ amount, currency, invoiceNumber, onSuccess }) {
     if (stripeError) {
       setError(stripeError.message);
       setPaying(false);
-    } else {
-      onSuccess();
+    } else if (paymentIntent?.status === "succeeded") {
+      // ✅ Tell backend to mark invoice as paid
+      try {
+        await axios.post(`${BASE_URL}/payments/confirm`, {
+          invoiceId: invoice._id?.$oid || invoice._id || invoice.id,
+          paymentIntentId: paymentIntent.id,
+        });
+      } catch (e) {
+        console.error("Confirm failed:", e.response?.data?.message);
+      }
+      onSuccess(); // ✅ Refresh invoice on public page
     }
   };
 
@@ -227,6 +236,7 @@ export default function PaymentModal({ invoice, onClose, onSuccess }) {
                 amount={invoice.balanceDue || invoice.total}
                 currency={invoice.currency}
                 invoiceNumber={invoice.invoiceNumber}
+                invoice={invoice}
                 onSuccess={handleSuccess}
               />
             </Elements>
